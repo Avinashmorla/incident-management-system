@@ -1,0 +1,47 @@
+[
+  {
+    "component_id": "RDBMS_PRIMARY_01",
+    "component_type": "RDBMS",
+    "message": "Primary database write latency exceeded 2 seconds",
+    "latency_ms": 2410,
+    "error_code": "DB_WRITE_TIMEOUT",
+    "payload": {
+      "region": "ap-south-1",
+      "query_family": "incident_write",
+      "replication_lag_ms": 880
+    }
+  },
+  {
+    "component_id": "RDBMS_PRIMARY_01",
+    "component_type": "RDBMS",
+    "message": "Connection pool exhausted on writer",
+    "latency_ms": 3100,
+    "error_code": "POOL_EXHAUSTED",
+    "payload": {
+      "active_connections": 500,
+      "max_connections": 500
+    }
+  },
+  {
+    "component_id": "MCP_HOST_07",
+    "component_type": "MCP_HOST",
+    "message": "MCP host dropped tool invocation heartbeat",
+    "latency_ms": 1600,
+    "error_code": "MCP_HEARTBEAT_MISSED",
+    "payload": {
+      "host": "mcp-host-07",
+      "affected_tools": ["search", "file-index"]
+    }
+  },
+  {
+    "component_id": "CACHE_CLUSTER_01",
+    "component_type": "CACHE",
+    "message": "Cache hit ratio fell below threshold",
+    "latency_ms": 95,
+    "error_code": "CACHE_DEGRADED",
+    "payload": {
+      "hit_ratio": 0.52,
+      "evictions_per_sec": 1900
+    }
+  }
+]

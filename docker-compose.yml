@@ -1,0 +1,22 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ims-data:/app/data
+    environment:
+      - INGESTION_RATE_PER_MINUTE=60000
+      - QUEUE_MAX_SIZE=10000
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  ims-data:
