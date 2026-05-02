@@ -3,7 +3,24 @@ import { createRoot } from 'react-dom/client';
 import { Activity, AlertTriangle, CheckCircle2, ClipboardList, RefreshCw, Send } from 'lucide-react';
 import './styles.css';
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
+function resolveApiBase() {
+  if (import.meta.env.VITE_API_BASE) {
+    return import.meta.env.VITE_API_BASE;
+  }
+
+  const { protocol, hostname } = window.location;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+
+  if (hostname.startsWith('5173-')) {
+    return `${protocol}//${hostname.replace(/^5173-/, '8000-')}`;
+  }
+
+  return `${protocol}//${hostname}:8000`;
+}
+
+const API_BASE = resolveApiBase();
 
 async function api(path, options) {
   const response = await fetch(`${API_BASE}${path}`, {
