@@ -1,8 +1,12 @@
-# Incident Management System
+# 🚀 Incident Management System (IMS)
 
-A compact mission-critical IMS implementation for high-volume signal ingestion, debounce-based incident creation, workflow management, RCA validation, and a responsive operations dashboard.
+A **production-inspired, mission-critical Incident Management System** designed to handle high-volume signal ingestion, intelligent incident creation, and workflow-driven resolution with mandatory Root Cause Analysis (RCA).
 
-## Architecture
+Modern distributed systems generate massive volumes of signals (errors, latency spikes, failures). Without proper aggregation and workflow, this leads to alert fatigue and delayed recovery. This system addresses that by implementing **debouncing, async processing, and structured incident lifecycle management**.
+
+---
+
+# 🧠 Architecture
 
 ```mermaid
 flowchart LR
@@ -10,66 +14,178 @@ flowchart LR
   API --> Limiter["Sliding Window Rate Limiter"]
   Limiter --> Queue["Bounded asyncio Queue"]
   Queue --> Workers["Async Worker Pool"]
-  Workers --> Lake["Raw Signal Lake JSON"]
-  Workers --> Truth["Work Item Source of Truth JSON"]
+
+  Workers --> Lake["Raw Signal Lake (JSON)"]
+  Workers --> Truth["Source of Truth (Incidents + RCA)"]
   Workers --> Agg["Timeseries Aggregations"]
-  Truth --> Cache["Dashboard Hot Cache"]
-  Cache --> UI["React Incident Dashboard"]
+
+  Truth --> Cache["Hot Cache (Dashboard State)"]
+  Cache --> UI["React Dashboard"]
+
   Lake --> UI
-  UI --> Workflow["State Machine + RCA Gate"]
+  UI --> Workflow["State Machine + RCA Validation"]
   Workflow --> Truth
 ```
 
-## Tech Stack
+---
 
-- Backend: Python, FastAPI, Pydantic, asyncio.
-- Frontend: React, Vite, lucide-react.
-- Storage: file-backed JSON adapters that represent the data lake and transactional source of truth. These can be replaced by S3/OpenSearch, PostgreSQL, Redis, and ClickHouse/Timescale in production.
-- Deployment: Docker Compose.
+# ⚙️ Tech Stack
 
-## Backpressure
+### Backend
+- Python + FastAPI → async, high-throughput ingestion
+- asyncio Queue + Worker Pool → lightweight concurrency model
 
-The ingestion API writes accepted signals to a bounded `asyncio.Queue`. If persistence slows down and the queue reaches `QUEUE_MAX_SIZE`, the API returns `503` so clients can retry with exponential backoff instead of crashing the process. A sliding-window rate limiter protects the ingestion edge from cascading failure. Console metrics print every five seconds with current signals/sec and queue depth.
+### Frontend
+- React + Vite → responsive dashboard
 
-## Debouncing
+### Storage (Simulated Production Design)
 
-Signals are grouped by `component_id`. If repeated signals for the same component arrive within ten seconds of the first signal, the worker links them to the existing work item and stores every raw payload in the raw signal lake. This satisfies the requirement that 100 signals for `CACHE_CLUSTER_01` create one work item while retaining all 100 signal records.
+| Layer | Implementation | Production Equivalent |
+|------|--------------|----------------------|
+| Raw Signal Lake | JSON | S3 / OpenSearch |
+| Source of Truth | JSON | PostgreSQL |
+| Cache | In-memory | Redis |
+| Aggregations | Counters | ClickHouse / Timescale |
 
-## Workflow Rules
+### Deployment
+- Docker Compose
 
-Valid state transitions:
+---
 
-```text
-OPEN -> INVESTIGATING -> RESOLVED -> CLOSED
-RESOLVED -> INVESTIGATING
+# 🧱 System Design Decisions
+
+- FastAPI → async-first, ideal for high throughput  
+- asyncio Queue → enables backpressure handling  
+- File-based storage → simple abstraction, replaceable with real infra  
+- Worker Pool → parallel processing without race conditions  
+
+---
+
+# ⚡ Key Features
+
+## High Throughput Ingestion
+- Handles burst traffic using async API
+- Designed for scalability (10k signals/sec conceptually)
+
+---
+
+## Backpressure Handling
+- Uses bounded queue  
+- If queue is full:
+  - API returns 503  
+  - Clients retry with backoff  
+
+---
+
+## Rate Limiting
+- Sliding window algorithm  
+- Protects ingestion layer from overload  
+
+---
+
+## Debouncing Logic
+
+- Signals grouped by `component_id`  
+- Time window: 10 seconds  
+
+Example:
+```
+100 signals → 1 incident
 ```
 
-Closing requires a complete RCA with incident start/end, category, fix applied, and prevention steps. MTTR is calculated from the first signal time to the RCA incident end time.
+- All signals stored in raw data lake  
+- Only one work item created  
 
-## Run With Docker Compose
+---
 
-```bash
-docker compose up --build
+## Concurrency Model
+
+- Async ingestion via FastAPI  
+- Queue buffering  
+- Worker pool processing  
+- Prevents race conditions  
+
+---
+
+## Workflow Engine
+
+### State Pattern
+```
+OPEN → INVESTIGATING → RESOLVED → CLOSED
+RESOLVED → INVESTIGATING
 ```
 
-Open:
+---
 
-- Frontend: http://localhost:5173
-- Backend health: http://localhost:8000/health
-- API docs: http://localhost:8000/docs
+## RCA Enforcement
+- Cannot close incident without RCA  
+- RCA includes:
+  - Start & End time  
+  - Root cause  
+  - Fix  
+  - Prevention  
 
-## Replay Sample Failure
+---
 
-After the stack is running:
+## MTTR Calculation
+```
+MTTR = RCA end_time - first_signal_time
+```
+
+---
+
+## Alerting Strategy
+- P0 → critical alerts  
+- P2 → standard alerts  
+
+---
+
+## Observability
+- `/health` endpoint  
+- Logs:
+  - Signals/sec  
+  - Queue depth  
+
+---
+
+# 🖥️ Frontend Dashboard
+
+- Live incident feed  
+- Incident detail view  
+- RCA form  
+
+---
+
+# 🧪 Sample Failure Simulation
 
 ```bash
 python sample-data/replay_failure.py --repeat 25
 ```
 
-This sends an RDBMS outage, MCP host failure, and cache degradation into the ingestion API.
+Simulates:
+- RDBMS outage  
+- Cache failure  
+- MCP host failure  
 
-## Local Backend
+---
 
+# 🐳 Run with Docker
+
+```bash
+docker compose up --build
+```
+
+Access:
+- Frontend → http://localhost:5173  
+- Backend → http://localhost:8000  
+- API Docs → http://localhost:8000/docs  
+- Health → http://localhost:8000/health  
+
+---
+
+# 💻 Local Setup
+
+## Backend
 ```bash
 cd backend
 python -m venv .venv
@@ -78,25 +194,67 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-## Local Frontend
-
+## Frontend
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## Tests
+---
+
+# 🧪 Tests
 
 ```bash
 cd backend
 pytest
 ```
 
-## Repository Contents
+---
 
-- `backend/app`: API, services, workflow, storage adapters, models.
-- `backend/tests`: RCA and debounce tests.
-- `frontend/src`: React dashboard.
-- `sample-data`: replay script and mock failure payloads.
-- `docs/IMPLEMENTATION_PLAN.md`: implementation notes and prompt/spec trail.
+# 📂 Repository Structure
+
+```
+/backend
+/frontend
+/sample-data
+/docs
+docker-compose.yml
+README.md
+```
+
+---
+
+# ✅ Assignment Mapping
+
+| Requirement | Implementation |
+|------------|--------------|
+| High throughput | Async API + queue |
+| Debouncing | Component window |
+| Async processing | Worker pool |
+| RCA enforcement | Workflow validation |
+| MTTR | Calculated |
+| Rate limiting | Sliding window |
+| Backpressure | Queue + 503 |
+| Observability | Health + metrics |
+| UI | React dashboard |
+| Sample data | Replay script |
+
+---
+
+# 🚀 Future Improvements
+
+- Replace JSON with PostgreSQL, Redis, S3  
+- Add JWT authentication  
+- Real alerting (email/SMS)  
+- Kafka/RabbitMQ integration  
+
+---
+
+# 🎯 Summary
+
+This project demonstrates:
+- Distributed system design  
+- SRE workflow understanding  
+- Scalable backend architecture  
+- DevOps best practices  
