@@ -9,7 +9,7 @@ from app.storage.repositories import AggregationSink, DashboardCache, RawSignalL
 
 
 def test_debounces_signals_for_same_component():
-    data_dir = Path("backend/.test-runtime") / str(uuid4())
+    data_dir = Path(".test-runtime") / str(uuid4())
     data_dir.mkdir(parents=True, exist_ok=True)
     asyncio.run(_run_debounce_case(data_dir))
 
